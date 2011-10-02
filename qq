@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# notes folder, for note creation and limiting searches
+NOTESDIR="/Users/ttscoff/Dropbox/Notes/nvALT2.1/"
+# extension used for your notes
+NOTESEXT="md"
+# the prefix you use to separate "Question" notes
+NOTESPRE="??"
+# editor command to use for modifying answers
+EDITOR="mate"
+
+if [[ "$1" == "-a" ]]
+then
+  if [ $# == 3 ]; then
+    QUESTION=$2
+    ANSWER=$3
+  elif [ $# == 1 ]; then
+    echo -n "Question: "
+    read QUESTION
+    echo -n "Answer: "
+    read ANSWER
+  else
+    echo "Invalid number of arguments for -a(dd). Requires question and answer (or no arguments to input them at runtime)."
+    echo "example: ${0##*/} -a \"What is the meaning of life?\" \"42\""
+    exit 1
+  fi
+  echo -n "$ANSWER" > "${NOTESDIR}$NOTESPRE $QUESTION.$NOTESEXT"
+  echo "Question added and answered."
+elif [[ "$1" == "-e" ]]; then
+  shift
+  INPUT=$@
+  ANSWER=`mdfind -onlyin "$NOTESDIR" "filename:.$NOTESEXT AND filename:$NOTESPRE AND ${INPUT%\?}"|head -n 1`
+  if [[ "$ANSWER" == "" ]]; then
+    echo "No results found for search."
+    exit 2
+  else
+    $EDITOR "$ANSWER"
+  fi
+else
+  INPUT=$@
+  echo "`mdfind -onlyin \"$NOTESDIR\" \"filename:.$NOTESEXT AND filename:$NOTESPRE AND ${INPUT%\?}\"`"|while read LINE; do
+      if [[ "$LINE" == "" ]]; then 
+        echo "Sorry, I don't know the answer to that question."
+        exit 1;
+      fi
+      QUESTION=${LINE##*/}
+      echo -n "Q: "
+      NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
+      echo ${QUESTION%%.$NOTESEXT}|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/(.)$/\1?/'
+      echo -n "A: "
+      cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|tr -s "\n"|sed -E 's/^[   ]*|[  ]*$//g'
+      echo
+  done
+fi
+exit 0
