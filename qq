@@ -29,7 +29,7 @@ then
 elif [[ "$1" == "-e" ]]; then
   shift
   INPUT=$@
-  ANSWER=`mdfind -onlyin "$NOTESDIR" "filename:.$NOTESEXT AND filename:$NOTESPRE AND ${INPUT%\?}"|head -n 1`
+  ANSWER=`mdfind -onlyin "$NOTESDIR" "filename:.$NOTESEXT AND filename:\"$NOTESPRE\" AND ${INPUT%\?}"|head -n 1`
   if [[ "$ANSWER" == "" ]]; then
     echo "No results found for search."
     exit 2
@@ -38,7 +38,7 @@ elif [[ "$1" == "-e" ]]; then
   fi
 else
   INPUT=$@
-  echo "`mdfind -onlyin \"$NOTESDIR\" \"filename:.$NOTESEXT AND filename:$NOTESPRE AND ${INPUT%\?}\"`"|while read LINE; do
+  echo "`mdfind -onlyin \"$NOTESDIR\" -interpret \"filename:.$NOTESEXT AND filename:$NOTESPRE AND ${INPUT%\?}\"`"|while read LINE; do
       if [[ "$LINE" == "" ]]; then 
         echo "Sorry, I don't know the answer to that question."
         exit 1;
@@ -48,7 +48,11 @@ else
       NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
       echo ${QUESTION%%.$NOTESEXT}|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/(.)$/\1?/'
       echo -n "A: "
-      cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|tr -s "\n"|sed -E 's/^[   ]*|[  ]*$//g'
+      cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^)]*)\)/\1/'|tr -s "\n"|sed -E 's/^[   ]*|[  ]*$//g'
+      if [[ `cat "$LINE"|grep -E '@copy\('` ]]; then
+        cat "$LINE"|grep '@copy('|sed -E 's/.*@copy\(([^)]*)\).*/\1/'|tr -d '\n'|pbcopy
+        echo "Example in clipboard"
+      fi
       echo
   done
 fi

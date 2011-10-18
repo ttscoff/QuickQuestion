@@ -58,6 +58,10 @@ You can add additional meta within the contents of the file to help in locating 
 
 An example of this would be a question like "What brand of cleaner did I use during the move?" The answer you gave was a cleaning solution you were really impressed with. A year later the only thing you may remember to ask is "cleaner," but you might not even remember that was the term you used. So you add "@(solution cleaning favorite)" to the answer. Now you can search for "favorite cleaning" or "cleaning solution" and still get the question you were looking for. It's similar to using tags, but you can be more verbose without cluttering up your pool of existing tags. In the example case, you can also use just the root or part of a word, e.g. `qq fav clean` to expand matching possibilities.
 
+### Copy to clipboard ###
+
+If your answer includes a command, url or other piece that you probably want to grab, you can surround it with @copy(part to copy) and the contents of the tag will be copied to the clipboard when the question is answered. The '@copy(' and ')' parts will be stripped from the answer given, but its contents will remain inline.
+
 ### Redacting answers ###
 
 If you're using LaunchBar or Alfred it's assumed that you can locate the question file and open it in an editor of choice easily enough. It's even simpler if your questions are stored in Notational Velocity/nvALT as you can edit them at the same time you search for them.
