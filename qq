@@ -24,7 +24,7 @@ then
     echo "example: ${0##*/} -a \"What is the meaning of life?\" \"42\""
     exit 1
   fi
-  echo -n "$ANSWER" > "${NOTESDIR}$NOTESPRE $QUESTION.$NOTESEXT"
+  echo -n "$ANSWER" > "${NOTESDIR}/$NOTESPRE $QUESTION.$NOTESEXT"
   echo "Question added and answered."
 elif [[ "$1" == "-e" ]]; then
   shift
