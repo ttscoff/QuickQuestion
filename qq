@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # notes folder, for note creation and limiting searches
-NOTESDIR="/Users/ttscoff/Dropbox/Notes/nvALT2.1/"
+NOTESDIR="/Users/ttscoff/Dropbox/Notes/nvALT2.1"
 # extension used for your notes
 NOTESEXT="md"
 # the prefix you use to separate "Question" notes
@@ -9,7 +9,17 @@ NOTESPRE="??"
 # editor command to use for modifying answers
 EDITOR="mate"
 
-if [[ "$1" == "-a" ]]
+NOTESDIR=`echo $NOTESDIR|sed -e '/\/$/! s/$/\//'`
+
+if [[ "$1" == "-h" ]]
+then
+  appname=`basename $0`
+  echo "$appname: build a knowledgebase with plain text files"
+  echo "Find an answer: $appname \"terms to search for\""
+  echo "Add a question\answer: $appname -a \"Question in natural language\" \"Succinct answer\""
+  echo "Add a question\answer interactively: $appname -a"
+  echo "Edit a question\answer: $appname -e \"terms to search for\" # first question found is edited"
+elif [[ "$1" == "-a" ]]
 then
   if [ $# == 3 ]; then
     QUESTION=$2
