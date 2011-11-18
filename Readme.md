@@ -71,7 +71,7 @@ If your answer includes a command, url or other piece that you probably want to 
 
 ### Redacting answers ###
 
-If you're using Quivksilver, LaunchBar or Alfred it's assumed that you can locate the question file and open it in an editor of choice easily enough. It's even simpler if your questions are stored in Notational Velocity/nvALT as you can edit them at the same time you search for them.
+If you're using Quicksilver, LaunchBar or Alfred it's assumed that you can locate the question file and open it in an editor of choice easily enough. It's even simpler if your questions are stored in Notational Velocity/nvALT as you can edit them at the same time you search for them.
 
 From the command line you can use the `-e` argument to open the first result for the following query in the editor you specified in the configuration (`mate` by default). It expects a command-line tool, not an OS X application name. Most editors have these available.
 
