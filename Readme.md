@@ -1,17 +1,20 @@
 # Quick Question
 
-The `qq` script and related extensions are designed to keep an archive of files with questions as the filename and answers as the content. It works well with Notational Velocity and nvALT, but can function as an archive of knowledge with nothing but a Mac and a command line. Scripts are included for LaunchBar and Alfred, as well as a command line tool.
+The `qq` script and related extensions are designed to keep an archive of files with questions as the filename and answers as the content. It works well with Notational Velocity and nvALT, but can function as an archive of knowledge with nothing but a Mac and a command line. Scripts are included for Quicksilver, LaunchBar and Alfred, as well as a command line tool.
 
 The story behind the script is: I forget everything. I forget what I was working on last night. I forget where I left important things. I forget how I solved a major problem and have to work it out again next time it comes up. I forget where I saved the perfect settings I found for h.264 compression. You get the picture. So I've started building an archive of plain text files with questions and answers, and a system which makes it easy to add new knowledge at any time. The question format makes it easy to query, even when I don't remember the answer at all.
 
 The system is very simple. A bunch of plain text files, each titled with one question and containing one answer. Searching and sorting is handled my the `mdfind` Spotlight interface with scripts and extensions that focus the search to a narrow scope with predefined options. The knowledgebase that's built is bulletproof and portable, scriptable and easily searchable. Plus, it works the same way as Notational Velocity, so they make a great pair.
 
-I use it with nvALT and sync to Simplenote and Dropbox, which means I can enter new questions and their answers from any mobile device or remote computer, in addition to being able to use the command line tool, LaunchBar actions and Alfred extensions. It keeps me sane.
+I use it with nvALT and sync to Simplenote and Dropbox, which means I can enter new questions and their answers from any mobile device or remote computer, in addition to being able to use the command line tool, Quicksilver actions, LaunchBar actions and Alfred extensions. It keeps me sane.
 
 ### Installation ###
 
 **Command line**
 : Put the `qq` script into a folder in your path and make it executable with `chmod a+x /path/to/qq`. Edit the script to set the location of your notes folder and the extension you use. You may want to set a different preferred "question" prefix if you already have one (or don't want filenames that need constant escaping).
+
+**Quicksilver**
+: Move the two .scpt files into `~/Library/Application Support/Quicksilver/Actions/`. These scripts require that the above command line script is in place and need to be edited with the proper *full* path to the script.
 
 **LaunchBar**
 : Move the two .scpt files into `~/Library/Application Support/LaunchBar/Actions/`. These scripts require that the above command line script is in place and need to be edited with the proper *full* path to the script.
@@ -28,6 +31,10 @@ I use it with nvALT and sync to Simplenote and Dropbox, which means I can enter 
 **Command line**
 : Add questions and answers using `qq -a "Question" "Answer"`, e.g. `qq "What is the answer to life, the universe and everything?" "42"`. If `-a` is specified without any additional arguments, `qq` will enter interactive mode and ask you for the question and the answer individually, accepting input from STDIN.
 : Ask a question using `qq fragmented question`, e.g. `qq meaning universe`. See the [Querying](#querying) section for more information on composing fragmented queries.
+
+**Quicksilver**
+: Add a question and answer by launching Quicksilver and entering a string in the format "question: answer", e.g. "what is the meaning of life, the universe and everything: 42" (activate text entry with the "'" key). Press tab, select the "Quick Answer" action and hit Enter.
+: Ask a question by typing launching Quicksilver and entering a [fragmented query](#querying) (activate text entry with the "'" key). Press tab, select the "Quick Question" action and hit Enter. 
 
 **LaunchBar**
 : Add a question and answer by launching LaunchBar and typing "qa". Select the "Quick Answer" action and hit Space. Then type a string in the format "question: answer", e.g. "what is the meaning of life, the universe and everything: 42".
@@ -64,7 +71,7 @@ If your answer includes a command, url or other piece that you probably want to 
 
 ### Redacting answers ###
 
-If you're using LaunchBar or Alfred it's assumed that you can locate the question file and open it in an editor of choice easily enough. It's even simpler if your questions are stored in Notational Velocity/nvALT as you can edit them at the same time you search for them.
+If you're using Quicksilver, LaunchBar or Alfred it's assumed that you can locate the question file and open it in an editor of choice easily enough. It's even simpler if your questions are stored in Notational Velocity/nvALT as you can edit them at the same time you search for them.
 
 From the command line you can use the `-e` argument to open the first result for the following query in the editor you specified in the configuration (`mate` by default). It expects a command-line tool, not an OS X application name. Most editors have these available.
 
