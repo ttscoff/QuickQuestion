@@ -1,6 +1,6 @@
 # Quick Question
 
-[Pretty version](http://brettterpstra.com/forget-about-it-or-not/)
+[Pretty version](http://ttscoff.github.com/QuickQuestion/)
 
 The `qq` script and related extensions are designed to keep an archive of files with questions as the filename and answers as the content. It works well with Notational Velocity and nvALT, but can function as an archive of knowledge with nothing but a Mac and a command line. Scripts are included for Quicksilver, LaunchBar and Alfred, as well as a command line tool.
 
