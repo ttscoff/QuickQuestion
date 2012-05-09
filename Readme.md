@@ -1,5 +1,7 @@
 # Quick Question
 
+[Pretty version](http://brettterpstra.com/forget-about-it-or-not/)
+
 The `qq` script and related extensions are designed to keep an archive of files with questions as the filename and answers as the content. It works well with Notational Velocity and nvALT, but can function as an archive of knowledge with nothing but a Mac and a command line. Scripts are included for Quicksilver, LaunchBar and Alfred, as well as a command line tool.
 
 The story behind the script is: I forget everything. I forget what I was working on last night. I forget where I left important things. I forget how I solved a major problem and have to work it out again next time it comes up. I forget where I saved the perfect settings I found for h.264 compression. You get the picture. So I've started building an archive of plain text files with questions and answers, and a system which makes it easy to add new knowledge at any time. The question format makes it easy to query, even when I don't remember the answer at all.
