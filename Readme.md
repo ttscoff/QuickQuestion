@@ -71,6 +71,10 @@ An example of this would be a question like "What brand of cleaner did I use dur
 
 If your answer includes a command, url or other piece that you probably want to grab, you can surround it with @copy(part to copy) and the contents of the tag will be copied to the clipboard when the question is answered. The '@copy(' and ')' parts will be stripped from the answer given, but its contents will remain inline.
 
+### Auto-open related urls ###
+
+If you add one or more @open() tags, the contents will be passed to the `open` command with the `-g` flag (open in background). You can use this to add related urls to the query. It's not a perfect system because if you ask a broad question and get 20 answers, each with one or more urls, they'll all open. But it's handy once in a while.
+
 ### Redacting answers ###
 
 If you're using Quicksilver, LaunchBar or Alfred it's assumed that you can locate the question file and open it in an editor of choice easily enough. It's even simpler if your questions are stored in Notational Velocity/nvALT as you can edit them at the same time you search for them.

@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # notes folder, for note creation and limiting searches
-NOTESDIR="/Users/ttscoff/Dropbox/Notes/nvALT2.1"
+NOTESDIR="/Volumes/Raptor/Users/ttscoff/Dropbox/nvALT2.2"
 # extension used for your notes
 NOTESEXT="md"
 # the prefix you use to separate "Question" notes
 NOTESPRE="??"
 # editor command to use for modifying answers
-EDITOR="mate"
+EDITOR="subl"
 
 NOTESDIR=`echo $NOTESDIR|sed -e '/\/$/! s/$/\//'`
 
@@ -34,8 +34,7 @@ then
     echo "example: ${0##*/} -a \"What is the meaning of life?\" \"42\""
     exit 1
   fi
-  echo -n "$ANSWER" > "${NOTESDIR}$NOTESPRE $QUESTION.$NOTESEXT"
-  echo "Question added and answered."
+  echo -n "$ANSWER" > "${NOTESDIR}$NOTESPRE $QUESTION.$NOTESEXT" && echo "Question added and answered." || echo "Something went wrong"
 elif [[ "$1" == "-e" ]]; then
   shift
   INPUT=$@
@@ -49,7 +48,7 @@ elif [[ "$1" == "-e" ]]; then
 else
   INPUT=$@
   echo "`mdfind -onlyin \"$NOTESDIR\" -interpret \"filename:.$NOTESEXT AND filename:$NOTESPRE AND ${INPUT%\?}\"`"|while read LINE; do
-      if [[ "$LINE" == "" ]]; then 
+      if [[ "$LINE" == "" ]]; then
         echo "Sorry, I don't know the answer to that question."
         exit 1;
       fi
@@ -58,10 +57,16 @@ else
       NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
       echo ${QUESTION%%.$NOTESEXT}|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/(.)$/\1?/'
       echo -n "A: "
-      cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^)]*)\)/\1/'|tr -s "\n"|sed -E 's/^[   ]*|[  ]*$//g'
+      cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^)]*)\)/\1/'|sed -E 's/@open\(([^)]*)\)/Related URL: \1/'|sed -E 's/^[   ]*|[  ]*$//g'
       if [[ `cat "$LINE"|grep -E '@copy\('` ]]; then
         cat "$LINE"|grep '@copy('|sed -E 's/.*@copy\(([^)]*)\).*/\1/'|tr -d '\n'|pbcopy
         echo "Example in clipboard"
+      fi
+
+      if [[ `cat "$LINE"|grep -E '@open\('` ]]; then
+        url=$(cat "$LINE"|grep '@open('|sed -E 's/.*@open\(([^)]*)\).*/\1 /'|tr -d '\n')
+        open -g $url
+        echo "Opened URL"
       fi
       echo
   done

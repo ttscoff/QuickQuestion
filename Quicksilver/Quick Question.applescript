@@ -1,0 +1,1 @@
+using terms from application "Quicksilver"	on process text (message)		set answers to do shell script "~/bin/qq \"" & message & "\""		tell application "Quicksilver" to show large type answers	end process textend using terms from
