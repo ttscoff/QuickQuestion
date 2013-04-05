@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # notes folder, for note creation and limiting searches
-NOTESDIR="/Volumes/Raptor/Users/ttscoff/Dropbox/nvALT2.2"
+NOTESDIR="$HOME/Dropbox/nvALT2.2"
 # extension used for your notes
 NOTESEXT="md"
 # the prefix you use to separate "Question" notes
@@ -55,16 +55,16 @@ else
       QUESTION=${LINE##*/}
       echo -n "Q: "
       NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
-      echo ${QUESTION%%.$NOTESEXT}|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/(.)$/\1?/'
+      echo ${QUESTION%%.$NOTESEXT}|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
       echo -n "A: "
-      cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^)]*)\)/\1/'|sed -E 's/@open\(([^)]*)\)/Related URL: \1/'|sed -E 's/^[   ]*|[  ]*$//g'
+      cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^\)]+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g'|sed -E 's/^[   ]*|[  ]*$//g'
       if [[ `cat "$LINE"|grep -E '@copy\('` ]]; then
-        cat "$LINE"|grep '@copy('|sed -E 's/.*@copy\(([^)]*)\).*/\1/'|tr -d '\n'|pbcopy
+        cat "$LINE"|grep '@copy('|sed -E 's/.*@copy\(([^\)]+)\).*/\1/'|tr -d '\n'|pbcopy
         echo "Example in clipboard"
       fi
 
       if [[ `cat "$LINE"|grep -E '@open\('` ]]; then
-        url=$(cat "$LINE"|grep '@open('|sed -E 's/.*@open\(([^)]*)\).*/\1 /'|tr -d '\n')
+        url=$(cat "$LINE"|grep '@open('|sed -E 's/.*@open\(([^\)]+)\).*/\1 /'|tr -d '\n')
         open -g $url
         echo "Opened URL"
       fi
