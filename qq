@@ -11,12 +11,15 @@ EDITOR="subl"
 
 NOTESDIR=`echo $NOTESDIR|sed -e '/\/$/! s/$/\//'`
 
+filename="filename"
+AND="AND"
+
 case $LANG in
   ru_RU.UTF-8|ru_RU)
     filename="имя"
     export LC_CTYPE=C
+    AND="И"
   ;;
-  *) filename="filename";;
 esac
 
 if [[ "$1" == "-h" ]]
@@ -46,7 +49,7 @@ then
 elif [[ "$1" == "-e" ]]; then
   shift
   INPUT=$@
-  ANSWER=`mdfind -onlyin "$NOTESDIR" "${filename}:.$NOTESEXT AND ${filename}:\"$NOTESPRE\" AND ${INPUT%\?}"|head -n 1`
+  ANSWER=`mdfind -onlyin "$NOTESDIR" "${filename}:.$NOTESEXT ${AND} ${filename}:\"$NOTESPRE\" ${AND} ${INPUT%\?}"|head -n 1`
   if [[ "$ANSWER" == "" ]]; then
     echo "No results found for search."
     exit 2
@@ -55,7 +58,7 @@ elif [[ "$1" == "-e" ]]; then
   fi
 else
   INPUT=$@
-  echo "`mdfind -onlyin \"$NOTESDIR\" -interpret \"${filename}:.$NOTESEXT AND ${filename}:$NOTESPRE AND ${INPUT%\?}\"`"|while read LINE; do
+  echo "`mdfind -onlyin \"$NOTESDIR\" -interpret \"${filename}:.$NOTESEXT ${AND} ${filename}:$NOTESPRE ${AND} ${INPUT%\?}\"`"|while read LINE; do
       if [[ "$LINE" == "" ]]; then
         echo "Sorry, I don't know the answer to that question."
         exit 1;
