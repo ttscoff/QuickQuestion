@@ -12,7 +12,10 @@ EDITOR="subl"
 NOTESDIR=`echo $NOTESDIR|sed -e '/\/$/! s/$/\//'`
 
 case $LANG in
-  ru_RU.UTF-8|ru_RU) filename="имя";;
+  ru_RU.UTF-8|ru_RU)
+    filename="имя"
+    export LC_CTYPE=C
+  ;;
   *) filename="filename";;
 esac
 
