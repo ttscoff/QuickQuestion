@@ -49,7 +49,13 @@ then
 elif [[ "$1" == "-e" ]]; then
   shift
   INPUT=$@
-  ANSWER=`mdfind -onlyin "$NOTESDIR" "${filename}:.$NOTESEXT ${AND} ${filename}:\"$NOTESPRE\" ${AND} ${INPUT%\?}"|head -n 1`
+    KEYWORDS=""
+    for WORD in $INPUT; do
+        WORD=${WORD%\?} # strip the ?
+        KEYWORDS=$KEYWORDS"${AND} filename:$WORD "
+    done
+
+  ANSWER=`mdfind -onlyin "$NOTESDIR" "${filename}:.$NOTESEXT ${AND} ${filename}:\"$NOTESPRE\" $KEYWORDS"|head -n 1`
   if [[ "$ANSWER" == "" ]]; then
     echo "No results found for search."
     exit 2
@@ -58,7 +64,11 @@ elif [[ "$1" == "-e" ]]; then
   fi
 else
   INPUT=$@
-  echo "`mdfind -onlyin \"$NOTESDIR\" -interpret \"${filename}:.$NOTESEXT ${AND} ${filename}:$NOTESPRE ${AND} ${INPUT%\?}\"`"|while read LINE; do
+  for WORD in $INPUT; do
+    WORD=${WORD%\?} # strip the ?
+    KEYWORDS=$KEYWORDS"${AND} filename:$WORD "
+  done
+  echo "`mdfind -onlyin \"$NOTESDIR\" -interpret \"${filename}:.$NOTESEXT ${AND} ${filename}:$NOTESPRE $KEYWORDS\"`"|while read LINE; do
       if [[ "$LINE" == "" ]]; then
         echo "Sorry, I don't know the answer to that question."
         exit 1;
