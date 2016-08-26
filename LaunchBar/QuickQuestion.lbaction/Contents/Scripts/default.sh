@@ -1,0 +1,274 @@
+#!/bin/bash
+#
+# LaunchBar Action Script
+#
+
+#!/bin/bash
+# 1.1.0
+# Only opens url/copies code from one note if there are multiple answers
+#
+__qq_esc () {
+echo "$*"|sed 's/"/\\\"/g'
+}
+
+__qq_remove_stopwords () {
+local input=$1
+declare -a STOPWORDS=( what which is can how do my where when why that the was who this I )
+for word in ${STOPWORDS[@]}; do
+input=$(echo "$input"|sed -E "s/(^| )$word([\.\,\? ]|$)/\1/g")
+done
+echo -n "$input"
+}
+
+__qq_query_include_all () {
+local input=$(__qq_remove_stopwords "$*")
+set $input
+declare -a query_array=( "$@" )
+local query=' AND ('
+for i in ${query_array[@]}; do
+query="${query}`__qq_esc $i` AND "
+done
+echo -n "$query"|sed 's/ AND $/)/'
+}
+
+__qq_query_exclude_all () {
+local input="$1"
+local OLDIFS=$IFS
+IFS=":"
+set $input
+declare -a query_array=( "$@" )
+local query=' NOT ('
+for i in ${query_array[@]}; do
+query="${query}filename:\"`__qq_esc $i`\" OR "
+done
+echo -n "$query"|sed 's/ OR $/)/'
+IFS=$OLDIFS
+}
+
+__qq () {
+### CONFIG
+# notes folder, for note creation and limiting searches
+local NOTESDIR="$HOME/Dropbox/nvALT2.2"
+# extension used for your notes
+local NOTESEXT="md"
+# the prefix you use to separate "Question" notes
+local NOTESPRE="??"
+# editor command to use for modifying answers
+local QQEDITOR="subl"
+
+NOTESDIR="${NOTESDIR%/}/"
+
+# Exlude file names containing these phrases, separated by colons
+local EXCLUDENAMES="what was I doing:check for jQuery"
+
+#### END CONFIG
+local INPUT QUERY HAS_OPENED_URL HAS_COPIED_TEXT NOTESPREESC QUESTION ANSWER appname url
+local EXCLUDEQUERY=$(__qq_query_exclude_all "$EXCLUDENAMES")
+
+HAS_COPIED_TEXT=false
+HAS_OPENED_URL=false
+if [[ "$1" == "-h" ]]
+then
+appname=`basename $0`
+echo "$appname: build a knowledgebase with plain text files"
+echo "Find an answer: $appname \"terms to search for\""
+echo "Add a question\answer: $appname -a \"Question in natural language\" \"Succinct answer\""
+echo "Add a question\answer interactively: $appname -a"
+echo "Edit a question\answer: $appname -e \"terms to search for\" # first question found is edited"
+elif [[ "$1" == "-a" ]]; then
+if [ $# == 3 ]; then
+QUESTION=$2
+ANSWER=$3
+elif [ $# == 1 ]; then
+echo -n "Question: "
+read QUESTION
+echo -n "Answer: "
+read ANSWER
+else
+echo "Invalid number of arguments for -a(dd). Requires question and answer (or no arguments to input them at runtime)."
+echo "example: ${0##*/} -a \"What is the meaning of life?\" \"42\""
+exit 1
+fi
+echo -n "$ANSWER" > "${NOTESDIR}$NOTESPRE $QUESTION.$NOTESEXT" && echo "Question added and answered." || echo "Something went wrong"
+elif [[ "$1" == "-e" ]]; then
+shift
+QUERY="'filename:.$NOTESEXT AND filename:\"$NOTESPRE\"$(__qq_query_include_all "${*%\?}")${EXCLUDEQUERY}'"
+echo $QUERY
+ANSWER=`mdfind -onlyin "$NOTESDIR" $QUERY|head -n 1`
+if [[ "$ANSWER" == "" ]]; then
+echo "No results found for search."
+exit 2
+else
+$QQEDITOR "$ANSWER"
+fi
+else
+# local INPUT=$@
+# QUERY="'kind:text AND filename:.$NOTESEXT AND filename:$NOTESPRE$(__qq_query_include_all "${*%\?}")${EXCLUDEQUERY}'"
+QUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:.$NOTESEXT AND filename:$NOTESPRE$(__qq_query_include_all "${*%\?}")${EXCLUDEQUERY}'"
+RESULTS=$(eval $QUERY)
+
+echo -e "$RESULTS" | while read LINE; do
+if [[ "$LINE" =~ ^$ ]]; then
+echo "Sorry, I don't know the answer to that question."
+exit 1;
+fi
+QUESTION=${LINE##*/}
+echo -n "Q: "
+NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
+echo ${QUESTION%%.$NOTESEXT}|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
+echo -n "A: "
+cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^\)]+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g'|sed -E 's/^[   ]*|[  ]*$//g'
+if [[ `cat "$LINE"|grep -E '@copy\('` && $HAS_COPIED_TEXT == false ]]; then
+cat "$LINE"|grep '@copy('|sed -E 's/.*@copy\(([^\)]+)\).*/\1/'|tr -d '\n'|pbcopy
+echo "Example in clipboard"
+HAS_COPIED_TEXT=true
+fi
+
+if [[ `cat "$LINE"|grep -E '@open\('` && $HAS_OPENED_URL == false ]]; then
+url=$(cat "$LINE"|grep '@open('|sed -E 's/.*@open\(([^\)]+)\).*/\1 /'|tr -d '\n')
+open -g $url
+echo "Opened URL"
+HAS_OPENED_URL=true
+fi
+echo
+done
+fi
+exit 0
+}
+
+__qq $@
+#!/bin/bash
+# 1.1.1
+# Only opens url/copies code from one note if there are multiple answers
+#
+__qq_esc () {
+echo "$*"|sed 's/"/\\\"/g'
+}
+
+__qq_remove_stopwords () {
+local input=$1
+declare -a STOPWORDS=( what which is can how do my where when why that the was who this I )
+for word in ${STOPWORDS[@]}; do
+input=$(echo "$input"|sed -E "s/(^| )$word([\.\,\? ]|$)/\1/g")
+done
+echo -n "$input"
+}
+
+__qq_query_include_all () {
+if [[ "$*" != "" ]]; then
+local input=$(__qq_remove_stopwords "$*")
+
+declare -a query_array=( "$@" )
+local query=' AND ('
+for i in ${query_array[@]}; do
+query="${query}`__qq_esc $i` AND "
+done
+echo -n "$query"|sed 's/ AND $/)/'
+fi
+}
+
+__qq_query_exclude_all () {
+local input="$1"
+local OLDIFS=$IFS
+IFS=":"
+set $input
+declare -a query_array=( "$@" )
+local query=' NOT ('
+for i in ${query_array[@]}; do
+query="${query}filename:\"`__qq_esc $i`\" OR "
+done
+echo -n "$query"|sed 's/ OR $/)/'
+IFS=$OLDIFS
+}
+
+__qq () {
+### CONFIG
+# notes folder, for note creation and limiting searches
+local NOTESDIR="$HOME/Dropbox/nvALT2.2"
+# extension used for your notes
+local NOTESEXT="md"
+# the prefix you use to separate "Question" notes
+local NOTESPRE="??"
+# editor command to use for modifying answers
+local QQEDITOR="subl"
+
+NOTESDIR="${NOTESDIR%/}/"
+
+# Exlude file names containing these phrases, separated by colons
+local EXCLUDENAMES="what was I doing"
+
+#### END CONFIG
+local INPUT QQQUERY HAS_OPENED_URL HAS_COPIED_TEXT NOTESPREESC QUESTION ANSWER appname url
+local EXCLUDEQQQUERY=$(__qq_query_exclude_all "$EXCLUDENAMES")
+
+HAS_COPIED_TEXT=false
+HAS_OPENED_URL=false
+if [[ "$1" == "-h" ]]
+then
+appname=`basename $0`
+echo "$appname: build a knowledgebase with plain text files"
+echo "Find an answer: $appname \"terms to search for\""
+echo "Add a question\answer: $appname -a \"Question in natural language\" \"Succinct answer\""
+echo "Add a question\answer interactively: $appname -a"
+echo "Edit a question\answer: $appname -e \"terms to search for\" # first question found is edited"
+elif [[ "$1" == "-a" || $# == 0 ]]; then
+if [ $# == 3 ]; then
+QUESTION=$2
+ANSWER=$3
+elif [ $# -le 1 ]; then
+echo -n "Question: "
+read QUESTION
+echo -n "Answer: "
+read ANSWER
+else
+echo "Invalid number of arguments for -a(dd). Requires question and answer (or no arguments to input them at runtime)."
+echo "example: ${0##*/} -a \"What is the meaning of life?\" \"42\""
+exit 1
+fi
+echo -n "$ANSWER" > "${NOTESDIR}$NOTESPRE $QUESTION.$NOTESEXT" && echo "Question added and answered." || echo "Something went wrong"
+elif [[ "$1" == "-e" ]]; then
+shift
+QQQUERY="'filename:.$NOTESEXT AND filename:\"$NOTESPRE\"$(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
+ANSWER=`mdfind -onlyin "$NOTESDIR" $QQQUERY|head -n 1`
+if [[ "$ANSWER" == "" ]]; then
+echo "No results found for search."
+exit 2
+else
+$QQEDITOR "$ANSWER"
+fi
+else
+# local INPUT=$@
+# QQQUERY="'kind:text AND filename:.$NOTESEXT AND filename:$NOTESPRE$(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
+QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:.$NOTESEXT AND filename:$NOTESPRE $(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
+RESULTS=$(eval $QQQUERY)
+
+echo -e "$RESULTS" | while read LINE; do
+if [[ "$LINE" =~ ^$ ]]; then
+echo "Sorry, I don't know the answer to that question."
+exit 1;
+fi
+QUESTION=${LINE##*/}
+echo -n "Q: "
+NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
+echo ${QUESTION%%.$NOTESEXT}|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
+echo -n "A: "
+cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^\)]+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g'|sed -E 's/^[   ]*|[  ]*$//g'
+if [[ `cat "$LINE"|grep -E '@copy\('` && $HAS_COPIED_TEXT == false ]]; then
+cat "$LINE"|grep '@copy('|sed -E 's/.*@copy\(([^\)]+)\).*/\1/'|tr -d '\n'|pbcopy
+echo "Example in clipboard"
+HAS_COPIED_TEXT=true
+fi
+
+if [[ `cat "$LINE"|grep -E '@open\('` && $HAS_OPENED_URL == false ]]; then
+url=$(cat "$LINE"|grep '@open('|sed -E 's/.*@open\(([^\)]+)\).*/\1 /'|tr -d '\n')
+open -g $url
+echo "Opened URL"
+HAS_OPENED_URL=true
+fi
+echo
+done
+fi
+exit 0
+}
+
+__qq $@
