@@ -99,7 +99,7 @@ __qq () {
   else
     # local INPUT=$@
     # QUERY="'kind:text AND filename:.$NOTESEXT AND filename:$NOTESPRE$(__qq_query_include_all "${*%\?}")${EXCLUDEQUERY}'"
-    QUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:.$NOTESEXT AND filename:$NOTESPRE$(__qq_query_include_all "${*%\?}")${EXCLUDEQUERY}'"
+    QUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE$(__qq_query_include_all "${*%\?}")${EXCLUDEQUERY}'"
     RESULTS=$(eval $QUERY)
 
     echo -e "$RESULTS" | while read LINE; do
@@ -234,7 +234,7 @@ __qq () {
   else
     # local INPUT=$@
     # QQQUERY="'kind:text AND filename:.$NOTESEXT AND filename:$NOTESPRE$(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
-    QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:.$NOTESEXT AND filename:$NOTESPRE $(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
+    QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE $(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
     RESULTS=$(eval $QQQUERY)
 
     echo -e "$RESULTS" | while read LINE; do
