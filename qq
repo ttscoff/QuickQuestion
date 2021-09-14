@@ -1,15 +1,4 @@
 #!/bin/bash
-# 1.2.0 - 2021-09-14
-# - Add -p switch to pull answer from clipboard when adding a question
-# - Improve option parsing
-# - Allow -e when adding answer to open new question file in editor
-# - Allow multi-line input when adding interactively
-# - Allow '#atag' to translate to 'tag:atag' in spotlight search
-# - Allow configuration via environment variables
-#
-# 1.1.1
-# - Only opens url/copies code from one note if there are multiple answers
-#
 # Usage:
 # Ask a question using natural language
 # $ qq [search terms]
@@ -33,16 +22,31 @@
 # new question, add the `-e` flag. If used alone, the first
 # matching answer will be opened in your editor.
 #
+# CONFIGURATION
+#
 # Configuration is done via environment variables:
 #
-#  QQ_NOTES_DIR - Path to Markdown files
-#  QQ_NOTES_EXT - Extension of markdown files (default md)
-#  QQ_NOTES_PRE - Prefix of question files (default ??)
-#  QQ_EDITOR    - Text editor to use (default $EDITOR)
+#   QQ_NOTES_DIR - Path to Markdown files
+#   QQ_NOTES_EXT - Extension of answer files (default md)
+#   QQ_NOTES_PRE - Prefix of question files (default ??)
+#   QQ_EDITOR    - Text editor to use (default $EDITOR)
 #
 #  Example:
 #  export QQ_NOTES_DIR="/Users/ttscoff/Dropbox/Notes"
-#  export QQ_NOTES_EXT="markdown"
+#  export QQ_NOTES_EXT="md"
+#
+# CHANGELOG
+#
+# 1.2.0 - 2021-09-14
+# - Add -p switch to pull answer from clipboard when adding a question
+# - Improve option parsing
+# - Allow -e when adding answer to open new question file in editor
+# - Allow multi-line input when adding interactively
+# - Allow '#atag' to translate to 'tag:atag' in spotlight search
+# - Allow configuration via environment variables
+#
+# 1.1.1
+# - Only opens url/copies code from one note if there are multiple answers
 
 : ${QQ_NOTES_DIR:="$HOME/Dropbox/Notes/nvALT2.2"}
 : ${QQ_NOTES_EXT:="md"}
@@ -72,10 +76,11 @@ __qq () {
   local EDITING=false
   local ADDING=false
   local PASTING=false
+  local HELPING=false
 
   OPTIND=1
 
-  while getopts "peah?" opt; do
+  while getopts "lpeah?c" opt; do
     case $opt in
       p)
         ADDING=true
@@ -87,9 +92,17 @@ __qq () {
       a)
         ADDING=true
         ;;
+      c)
+        __qq_config
+        HELPING=true
+        ;;
+      l)
+        __qq_list_all
+        exit 0
+        ;;
       h|\?)
         __qq_help
-        exit 0
+        HELPING=true
         ;;
     esac
   done
@@ -97,10 +110,14 @@ __qq () {
   shift $((OPTIND-1))
   [ "${1:-}" = "--" ] && shift
 
+  if $HELPING; then
+    exit 0
+  fi
+
   HAS_COPIED_TEXT=false
   HAS_OPENED_URL=false
 
-  if [[ "$ADDING" == "true" || $# == 0 ]]; then
+  if $ADDING; then
     if [ $# == 2 ]; then
       QUESTION=$1
       ANSWER=$2
@@ -133,8 +150,11 @@ __qq () {
       echo -n "$ANSWER" >> "$QQFILE" && echo "Question added and answered." || echo "Something went wrong"
     fi
   else
-    # local INPUT=$@
-    # QQQUERY="'kind:text AND filename:.$NOTESEXT AND filename:$NOTESPRE$(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
+    if [[ $# == 0 ]]; then
+      __qq_help
+      exit 0
+    fi
+
     QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE $(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
     RESULTS=$(eval $QQQUERY)
 
@@ -144,7 +164,7 @@ __qq () {
     fi
 
     if [[ "$RESULTS" == "" ]]; then
-      echo "Sorry, I don't know the answer to that question."
+      echo "$(__qc red)Sorry, I don't know the answer to that question.$(__qc reset)"
       exit 2
     else
       if $EDITING; then
@@ -153,16 +173,16 @@ __qq () {
       else
         echo -e "$RESULTS" | while read LINE; do
           if [[ "$LINE" =~ ^$ ]]; then
-            echo "Sorry, I don't know the answer to that question."
+            echo "$(__qc red)Sorry, I don't know the answer to that question.$(__qc reset)"
             exit 1;
           fi
           QUESTION=`basename "$LINE" ".$NOTESEXT"`
           echo -e "\n"
-          echo -n "Q: "
+          echo -n "$(__qc yellow)Q: $(__qc white)"
           NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
           echo "$QUESTION"|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
-          echo -n "A: "
-          cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^\)]+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g'|sed -E 's/^[   ]*|[  ]*$//g'
+          echo -n "$(__qc yellow)A: $(__qc white)"
+          cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^\)]+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g' # |sed -E 's/^[   ]*|[  ]*$//g'
           if [[ `cat "$LINE"|grep -E '@copy\('` && $HAS_COPIED_TEXT == false ]]; then
             cat "$LINE"|grep '@copy('|sed -E 's/.*@copy\(([^\)]+)\).*/\1/'|tr -d '\n'|pbcopy
             echo "Example in clipboard"
@@ -176,7 +196,7 @@ __qq () {
             HAS_OPENED_URL=true
           fi
         done
-
+        __qc reset
       fi
     fi
   fi
@@ -228,21 +248,79 @@ __qq_query_exclude_all () {
   IFS=$OLDIFS
 }
 
+__qq_list_all () {
+  local QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE ${EXCLUDEQQQUERY}'"
+  local NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
+  RESULTS=$(eval $QQQUERY)
+  echo "$(__qc green)Questions I have answers to...$(__qc white)"
+  echo -e "$RESULTS" | while read LINE; do
+    if [[ "$LINE" =~ ^$ ]]; then
+      echo "$(__qc red)Sorry, no answers found.$(__qc reset)"
+      exit 1;
+    fi
+    QUESTION=`basename "$LINE" ".$NOTESEXT"`
+    echo "$QUESTION"|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
+  done
+  __qc reset
+}
+
 __qq_help () {
   appname=`basename $0`
-  echo "$appname: build a knowledgebase with plain text files"
-  echo "Find an answer: $appname \"terms to search for\""
-  echo "Add a question/answer: $appname -a \"Question in natural language\" \"Succinct answer\""
-  echo "Add a question/answer interactively: $appname -a"
-  echo "Add a question with answer from clipboard: $appname -p [\"Optional Question\"]"
-  echo "Edit an answer: $appname -e \"terms to search for\" # first question found is edited"
-
+  echo "$(__qc white)QuickQuestion$(__qc reset) - build a knowledgebase with plain text files"
+  echo "$(__qc green)Usage: $(__qc yellow)$appname $(__qc white)\"terms to search for\"$(__qc reset)"
   echo
-  echo "Configuration:"
-  echo "QQ_NOTES_DIR: ${QQ_NOTES_DIR}"
-  echo "QQ_NOTES_EXT: ${QQ_NOTES_EXT}"
-  echo "QQ_NOTES_PRE: ${QQ_NOTES_PRE}"
-  echo "QQ_EDITOR: ${QQ_EDITOR}"
+  echo "$(__qc green)Options:$(__qc reset)"
+  echo "   $(__qc white)-a$(__qc reset) [QUESTION $(__qc gray)[ANSWER]$(__qc reset)]  Add a question/answer"
+  echo "   $(__qc white)  $(__qc reset)                      No arguments triggers interactive add"
+  echo "   $(__qc white)-l$(__qc reset)                      List all known questions"
+  echo "   $(__qc white)-p$(__qc reset) [QUESTION]           Add a question using the clipboard as answer"
+  echo "   $(__qc white)-e$(__qc reset)                      Open editor with first result"
+  echo "   $(__qc white)-h$(__qc reset)                      Show this help"
+  echo "   $(__qc white)-c$(__qc reset)                      Display configuration"
+  echo
+  echo "Add question/answer: $(__qc yellow)$appname $(__qc white)-a$(__qc reset) \"Question in natural language\" \"Succinct answer\""
+  echo "  Add interactively: $(__qc yellow)$appname $(__qc white)-a$(__qc reset)"
+  echo " Add from clipboard: $(__qc yellow)$appname $(__qc white)-p$(__qc reset) [\"Optional Question\"]"
+  echo "     Edit an answer: $(__qc yellow)$appname $(__qc white)-e$(__qc reset) \"terms to search for\" # first question found is edited"
+  echo
+}
+
+__qq_config () {
+  echo "$(__qc green)QuickQuestion Settings:$(__qc reset)"
+  echo
+  echo "$(__qc yellow)QQ_NOTES_DIR: $(__qc white)${QQ_NOTES_DIR}$(__qc reset)"
+  echo "$(__qc yellow)QQ_NOTES_EXT: $(__qc white)${QQ_NOTES_EXT}$(__qc reset)"
+  echo "$(__qc yellow)QQ_NOTES_PRE: $(__qc white)${QQ_NOTES_PRE}$(__qc reset)"
+  echo "$(__qc yellow)   QQ_EDITOR: $(__qc white)${QQ_EDITOR}$(__qc reset)"
+  echo
+}
+
+__qc () {
+  local COLOR
+  case $1 in
+    gray)
+      COLOR="\033[1;30m"
+      ;;
+    green)
+      COLOR="\033[0;32m"
+      ;;
+    reset)
+      COLOR="\033[0;39m"
+      ;;
+    cyan)
+      COLOR="\033[0;36m"
+      ;;
+    white)
+      COLOR="\033[1;37m"
+      ;;
+    yellow)
+      COLOR="\033[0;33m"
+      ;;
+    red)
+      COLOR="\033[0;31m"
+      ;;
+  esac
+  echo -en $COLOR
 }
 
 # __qq_query_include_all OR $@
