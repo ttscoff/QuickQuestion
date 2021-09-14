@@ -1,5 +1,5 @@
 #!/bin/bash
-# 1.2.1 - 2021-09-14
+# 1.2.0 - 2021-09-14
 # - Add -p switch to pull answer from clipboard when adding a question
 # - Improve option parsing
 # - Allow -e when adding answer to open new question file in editor
@@ -157,6 +157,7 @@ __qq () {
             exit 1;
           fi
           QUESTION=`basename "$LINE" ".$NOTESEXT"`
+          echo -e "\n"
           echo -n "Q: "
           NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
           echo "$QUESTION"|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
@@ -175,6 +176,7 @@ __qq () {
             HAS_OPENED_URL=true
           fi
         done
+
       fi
     fi
   fi
