@@ -1,5 +1,5 @@
 #!/bin/bash
-# 1.2.0 - 2021-09-14
+# 1.2.1 - 2021-09-14
 # - Add -p switch to pull answer from clipboard when adding a question
 # - Improve option parsing
 # - Allow -e when adding answer to open new question file in editor
