@@ -135,11 +135,11 @@ __qq () {
   else
     # local INPUT=$@
     # QQQUERY="'kind:text AND filename:.$NOTESEXT AND filename:$NOTESPRE$(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
-    QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:.$NOTESEXT AND filename:$NOTESPRE $(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
+    QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE $(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
     RESULTS=$(eval $QQQUERY)
 
     if [[ "$RESULTS" == "" ]]; then
-      QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:.$NOTESEXT AND filename:$NOTESPRE $(__qq_query_include_all OR "${*%\?}")${EXCLUDEQQQUERY}'"
+      QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE $(__qq_query_include_all OR "${*%\?}")${EXCLUDEQQQUERY}'"
       RESULTS=$(eval $QQQUERY)
     fi
 
@@ -152,29 +152,28 @@ __qq () {
         $QQEDITOR "$ANSWER"
       else
         echo -e "$RESULTS" | while read LINE; do
-            if [[ "$LINE" =~ ^$ ]]; then
-              echo "Sorry, I don't know the answer to that question."
-              exit 1;
-            fi
-            QUESTION=${LINE##*/}
-            echo -n "Q: "
-            NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
-            echo ${QUESTION%%.$NOTESEXT}|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
-            echo -n "A: "
-            cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^\)]+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g'|sed -E 's/^[   ]*|[  ]*$//g'
-            if [[ `cat "$LINE"|grep -E '@copy\('` && $HAS_COPIED_TEXT == false ]]; then
-              cat "$LINE"|grep '@copy('|sed -E 's/.*@copy\(([^\)]+)\).*/\1/'|tr -d '\n'|pbcopy
-              echo "Example in clipboard"
-              HAS_COPIED_TEXT=true
-            fi
+          if [[ "$LINE" =~ ^$ ]]; then
+            echo "Sorry, I don't know the answer to that question."
+            exit 1;
+          fi
+          QUESTION=`basename "$LINE" ".$NOTESEXT"`
+          echo -n "Q: "
+          NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
+          echo "$QUESTION"|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
+          echo -n "A: "
+          cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^\)]+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g'|sed -E 's/^[   ]*|[  ]*$//g'
+          if [[ `cat "$LINE"|grep -E '@copy\('` && $HAS_COPIED_TEXT == false ]]; then
+            cat "$LINE"|grep '@copy('|sed -E 's/.*@copy\(([^\)]+)\).*/\1/'|tr -d '\n'|pbcopy
+            echo "Example in clipboard"
+            HAS_COPIED_TEXT=true
+          fi
 
-            if [[ `cat "$LINE"|grep -E '@open\('` && $HAS_OPENED_URL == false ]]; then
-              url=$(cat "$LINE"|grep '@open('|sed -E 's/.*@open\(([^\)]+)\).*/\1 /'|tr -d '\n')
-              open -g $url
-              echo "Opened URL"
-              HAS_OPENED_URL=true
-            fi
-            echo
+          if [[ `cat "$LINE"|grep -E '@open\('` && $HAS_OPENED_URL == false ]]; then
+            url=$(cat "$LINE"|grep '@open('|sed -E 's/.*@open\(([^\)]+)\).*/\1 /'|tr -d '\n')
+            open -g $url
+            echo "Opened URL"
+            HAS_OPENED_URL=true
+          fi
         done
       fi
     fi
