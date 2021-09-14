@@ -16,7 +16,8 @@
 # $ qq -p "This is the question"
 #
 # If no arguments are provided with -a or -p, input will be
-# requested interactively.
+# requested interactively. If used with -e, answer will be
+# opened in editor.
 #
 # To edit an existing answer or use the editor to answer a
 # new question, add the `-e` flag. If used alone, the first
@@ -36,8 +37,11 @@
 #  export QQ_NOTES_EXT="md"
 #
 # CHANGELOG
+# 1.2.1
+# - Colorize output
+# - List all known questions with -l
 #
-# 1.2.0 - 2021-09-14
+# 1.2.0
 # - Add -p switch to pull answer from clipboard when adding a question
 # - Improve option parsing
 # - Allow -e when adding answer to open new question file in editor
