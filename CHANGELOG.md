@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.2.5
+
+- Much improved presentation of results when using fzf
+
 ## 1.2.4
 
 - Way better searching, progressively fuzzier until a match is found
