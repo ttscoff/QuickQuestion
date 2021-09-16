@@ -1,4 +1,5 @@
 #!/bin/bash
+QQ_VERSION=1.2.3
 # Usage:
 # Ask a question using natural language
 # $ qq [search terms]
@@ -36,32 +37,14 @@
 #  export QQ_NOTES_DIR="/Users/ttscoff/Dropbox/Notes"
 #  export QQ_NOTES_EXT="md"
 #
-# CHANGELOG
-# 1.2.2
-# - OR query when AND failed was way too broad, replaced
-#   with phrase and no boolean
-# - Added debugging
-#
-#
-# 1.2.1
-# - Colorize output
-# - List all known questions with -l
-#
-# 1.2.0
-# - Add -p switch to pull answer from clipboard when adding a question
-# - Improve option parsing
-# - Allow -e when adding answer to open new question file in editor
-# - Allow multi-line input when adding interactively
-# - Allow '#atag' to translate to 'tag:atag' in spotlight search
-# - Allow configuration via environment variables
-#
-# 1.1.1
-# - Only opens url/copies code from one note if there are multiple answers
-
 : ${QQ_NOTES_DIR:="$HOME/Dropbox/Notes/nvALT2.2"}
 : ${QQ_NOTES_EXT:="md"}
 : ${QQ_NOTES_PRE:="??"}
 : ${QQ_EDITOR:=$EDITOR}
+_USE_FZF=false
+which fzf &>/dev/null
+[[ $? == 0 ]] && _USE_FZF=true
+: ${QQ_USE_FZF:=$_USE_FZF}
 
 _QQ_DEBUG=false
 
@@ -93,7 +76,7 @@ __qq () {
 
   OPTIND=1
 
-  while getopts "acdeh?lp" opt; do
+  while getopts "acdeh?lpv" opt; do
     case $opt in
       a)
         ADDING=true
@@ -120,6 +103,10 @@ __qq () {
         ADDING=true
         PASTING=true
         ;;
+      v)
+        echo "$0 v$QQ_VERSION"
+        return
+        ;;
     esac
   done
 
@@ -127,7 +114,7 @@ __qq () {
   [ "${1:-}" = "--" ] && shift
 
   if $HELPING; then
-    exit 0
+    return
   fi
 
   HAS_COPIED_TEXT=false
@@ -168,12 +155,13 @@ __qq () {
   else
     if [[ $# == 0 ]]; then
       __qq_help
-      exit 0
+      return
     fi
-    QQINPUTQUERY=$(__qq_query_include_all "${*%\?}")
+    local QQORIGINALQUERY="$*"
+    local QQINPUTQUERY=$(__qq_query_include_all "${*%\?}")
     __qq_debug "Attempting to find ALL options: ${QQINPUTQUERY}"
     QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE ${QQINPUTQUERY}${EXCLUDEQQQUERY}'"
-    RESULTS=$(eval $QQQUERY)
+    local RESULTS=$(eval $QQQUERY)
 
     if [[ "$RESULTS" == "" ]]; then
       QQINPUTQUERY=$(__qq_query_include_all OR "${*%\?}")
@@ -183,40 +171,82 @@ __qq () {
     fi
 
     if [[ "$RESULTS" == "" ]]; then
+
+      if $QQ_USE_FZF; then
+        QQQUERY='ls "${NOTESDIR}??"*.$NOTESEXT|fzf -i --tiebreak=length,begin -f "$(__qq_remove_stopwords "$*")"'
+        __qq_debug "We have fzf, trying: ${QQQUERY}"
+        RESULTS=$(eval $QQQUERY)
+        RESULTS=$(echo "$RESULTS" | head -n 1)
+      fi
+    fi
+
+    if [[ "$RESULTS" == "" ]]; then
+      __qq_debug "Well, jeeze, I guess we'll try grepping for the question with the most matching words"
+      declare -a WORDS=( $* )
+      local MAX=${#WORDS}
+      local RX=$(__qq_query_regex "$*")
+      for i in $(seq $MAX 2); do
+        RESULTS=$(ls "${NOTESDIR}??"*.$NOTESEXT|grep -iE "${RX}{$i}")
+        if [[ "$RESULTS" != "" ]]; then
+          __qq_debug "Ooh, found a match containing $i of the words: ${RX}{$i}"
+          break
+        fi
+      done
+    fi
+
+    if [[ "$RESULTS" == "" ]]; then
       echo "$(__qc red)Sorry, I don't know the answer to that question.$(__qc reset)"
       exit 2
     else
-      if $EDITING; then
-        ANSWER=$(echo "$RESULTS"|head -n 1)
-        $QQEDITOR "$ANSWER"
-      else
-        echo -e "$RESULTS" | while read LINE; do
-          if [[ "$LINE" =~ ^$ ]]; then
-            echo "$(__qc red)Sorry, I don't know the answer to that question.$(__qc reset)"
-            exit 1;
-          fi
-          QUESTION=`basename "$LINE" ".$NOTESEXT"`
-          echo -e "\n"
-          echo -n "$(__qc yellow)Q: $(__qc white)"
-          NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
-          echo "$QUESTION"|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
-          echo -n "$(__qc yellow)A: $(__qc white)"
-          cat "$LINE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^\)]+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g' # |sed -E 's/^[   ]*|[  ]*$//g'
-          if [[ `cat "$LINE"|grep -E '@copy\('` && $HAS_COPIED_TEXT == false ]]; then
-            cat "$LINE"|grep '@copy('|sed -E 's/.*@copy\(([^\)]+)\).*/\1/'|tr -d '\n'|pbcopy
-            echo "Example in clipboard"
-            HAS_COPIED_TEXT=true
-          fi
+      # Sort results by length, assuming shortest result is best match
+      RESULTS=$(echo "$RESULTS" | awk '{ print length, $0 }' | sort -n -s | cut -d" " -f2-)
 
-          if [[ `cat "$LINE"|grep -E '@open\('` && $HAS_OPENED_URL == false ]]; then
-            url=$(cat "$LINE"|grep '@open('|sed -E 's/.*@open\(([^\)]+)\).*/\1 /'|tr -d '\n')
-            open -g $url
-            echo "Opened URL"
-            HAS_OPENED_URL=true
-          fi
-        done
-        __qc reset
+      if $QQ_USE_FZF; then
+        ANSWER=$(echo -e "$RESULTS"|fzf -i --prompt="Select a question > " -1 -q "$QQORIGINALQUERY")
+        RESULTS=""
+      else
+        ANSWER=$(echo -e "$RESULTS" | head -n 1)
+        RESULTS=$(echo -e "$RESULTS" | sed '1d' | head -n 5)
       fi
+
+      if $EDITING; then
+        ANSWER=$(echo "$RESULTS" | awk '{ print length, $0 }' | sort -n -s | cut -d" " -f2- | head -n 1)
+        $QQEDITOR "$ANSWER"
+        return
+      fi
+
+      if [[ "$ANSWER" =~ ^$ ]]; then
+        echo "$(__qc red)Sorry, I don't know the answer to that question.$(__qc reset)"
+        exit 1;
+      fi
+
+      QUESTION=`basename "$ANSWER" ".$NOTESEXT"`
+      echo -e "\n"
+      echo -n "$(__qc yellow)Q: $(__qc white)"
+      NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
+      echo "$QUESTION"|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
+      echo -n "$(__qc yellow)A: $(__qc white)"
+      cat "$ANSWER"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^\)]+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g' # |sed -E 's/^[   ]*|[  ]*$//g'
+      if [[ `cat "$ANSWER"|grep -E '@copy\('` && $HAS_COPIED_TEXT == false ]]; then
+        cat "$ANSWER"|grep '@copy('|sed -E 's/.*@copy\(([^\)]+)\).*/\1/'|tr -d '\n'|pbcopy
+        echo -e "\n$(__qc green)Example in clipboard"
+        HAS_COPIED_TEXT=true
+      fi
+
+      if [[ `cat "$ANSWER"|grep -E '@open\('` && $HAS_OPENED_URL == false ]]; then
+        url=$(cat "$ANSWER"|grep '@open('|sed -E 's/.*@open\(([^\)]+)\).*/\1 /'|tr -d '\n')
+        open -g $url
+        echo -e "\n$(__qc green)Opened URL"
+        HAS_OPENED_URL=true
+      fi
+
+      if [[ "$RESULTS" != "" ]]; then
+        echo "$(__qc gray)----------------------"
+        echo "$(__qc yellow)Other results included:"
+        echo -e "$(__qc cyan)$RESULTS"
+      fi
+
+      __qc reset
     fi
   fi
   exit 0
@@ -251,6 +281,18 @@ __qq_query_include_all () {
         query="${query}`__qq_esc $i`$bool"
     done
     echo -n "$query"|sed -e 's/ AND $//' -e 's/ OR $//' -e 's/ +/ /g' -e 's/ *$/)/'
+  fi
+}
+
+__qq_query_regex () {
+  if [[ "$*" != "" ]]; then
+    declare -a query_array=( $* )
+    local query="(.*("
+    for i in ${query_array[@]}; do
+      local stripped=$(echo "$i" | sed -E 's/[^A-Z0-9 ]/.?/gi')
+      query="${query}${stripped}|"
+    done
+    echo -n "$query"|sed -e 's/|$//' -e 's/$/).*)/'
   fi
 }
 

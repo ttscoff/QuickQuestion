@@ -1,4 +1,4 @@
-# Quick Question
+# Quick Question #
 
 [Pretty version](http://ttscoff.github.com/QuickQuestion/)
 
@@ -27,6 +27,23 @@ I use it with nvALT and sync to Simplenote and Dropbox, which means I can enter 
 **Notational Velocity/nvALT**
 : By nature, you don't need anything special to use this system with NV. You just need to save your notes to plain text files if you want them to be accessible to `mdfind` and other system tools.
 : To get simple command line access to the question in your NV folder, set up the configuration in the `qq` script above to point to your NV notes folder. This will allow you to run speedy queries confined to just that directory, and enter notes quickly from other sources. Notes entered from the command line or LaunchBar/Alfred will show up instantly in your NV notes list.
+
+
+### CONFIGURATION ###
+
+Configuration is done via environment variables:
+
+      QQ_NOTES_DIR - Path to Markdown files
+      QQ_NOTES_EXT - Extension of answer files (default md)
+      QQ_NOTES_PRE - Prefix of question files (default ??)
+      QQ_EDITOR    - Text editor to use (default $EDITOR)
+      QQ_USE_FZF   - If fzf is available, it will be used by default. Set this 
+                     to false to override
+
+ Example:
+
+     export QQ_NOTES_DIR="/Users/ttscoff/Dropbox/Notes"
+     export QQ_NOTES_EXT="md"
 
 ### Usage ###
 
@@ -59,7 +76,7 @@ Keep your questions in a natural language format, but avoid contractions and use
 
 When querying, only use operative terms to get the best results. "Where did I leave my glasses" will return poor results if the question you labeled it with was "Where did I put my glasses". Instead, query "where glasses" and you'll find the note instantly.
 
-Running `qq` at the command line with no arguments will list all of the questions and their answers in your archive. This can be handy for using with `grep` to parse out pieces of questions and/or answers that you couldn't find otherwise.
+Running `qq -l` at the command line with no arguments will list all of the questions and their answers in your archive. This can be handy for using with `grep` to parse out pieces of questions and/or answers that you couldn't find otherwise.
 
 ### Additional meta ###
 
