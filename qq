@@ -37,6 +37,12 @@
 #  export QQ_NOTES_EXT="md"
 #
 # CHANGELOG
+# 1.2.2
+# - OR query when AND failed was way too broad, replaced
+#   with phrase and no boolean
+# - Added debugging
+#
+#
 # 1.2.1
 # - Colorize output
 # - List all known questions with -l
@@ -56,6 +62,8 @@
 : ${QQ_NOTES_EXT:="md"}
 : ${QQ_NOTES_PRE:="??"}
 : ${QQ_EDITOR:=$EDITOR}
+
+_QQ_DEBUG=false
 
 __qq () {
   ### CONFIG
@@ -81,18 +89,12 @@ __qq () {
   local ADDING=false
   local PASTING=false
   local HELPING=false
+  local DEBUG=false
 
   OPTIND=1
 
-  while getopts "lpeah?c" opt; do
+  while getopts "acdeh?lp" opt; do
     case $opt in
-      p)
-        ADDING=true
-        PASTING=true
-        ;;
-      e)
-        EDITING=true
-        ;;
       a)
         ADDING=true
         ;;
@@ -100,13 +102,23 @@ __qq () {
         __qq_config
         HELPING=true
         ;;
-      l)
-        __qq_list_all
-        exit 0
+      d)
+        export _QQ_DEBUG=true
+        ;;
+      e)
+        EDITING=true
         ;;
       h|\?)
         __qq_help
         HELPING=true
+        ;;
+      l)
+        __qq_list_all
+        exit 0
+        ;;
+      p)
+        ADDING=true
+        PASTING=true
         ;;
     esac
   done
@@ -158,12 +170,15 @@ __qq () {
       __qq_help
       exit 0
     fi
-
-    QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE $(__qq_query_include_all "${*%\?}")${EXCLUDEQQQUERY}'"
+    QQINPUTQUERY=$(__qq_query_include_all "${*%\?}")
+    __qq_debug "Attempting to find ALL options: ${QQINPUTQUERY}"
+    QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE ${QQINPUTQUERY}${EXCLUDEQQQUERY}'"
     RESULTS=$(eval $QQQUERY)
 
     if [[ "$RESULTS" == "" ]]; then
-      QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE $(__qq_query_include_all OR "${*%\?}")${EXCLUDEQQQUERY}'"
+      QQINPUTQUERY=$(__qq_query_include_all OR "${*%\?}")
+      __qq_debug "No luck, looser search: ${QQINPUTQUERY}"
+      QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE ${QQINPUTQUERY}${EXCLUDEQQQUERY}'"
       RESULTS=$(eval $QQQUERY)
     fi
 
@@ -213,28 +228,29 @@ __qq_esc () {
 
 __qq_remove_stopwords () {
   local input=$1
-  declare -a STOPWORDS=( what which is can how do my where when why that the was who this I )
+  declare -a STOPWORDS=( what which is can how do my where when why that the was who this i a as if up out in )
   for word in ${STOPWORDS[@]}; do
-    input=$(echo "$input"|sed -E "s/(^| )$word([\.\,\? ]|$)/\1/g")
+    input=$(echo "$input"|sed -E "s/(^| )$word([\.\,\? ]|$)/\1/ig")
   done
+  __qq_debug "Cleaned stop words: ${input}"
   echo -n "$input"
 }
 
 __qq_query_include_all () {
-  local bool="AND"
+  local bool=" AND "
   if [[ $1 == "OR" ]]; then
-    bool="OR"
+    bool=" "
     shift
   fi
   if [[ "$*" != "" ]]; then
     local input=$(__qq_remove_stopwords "$*")
 
-    declare -a query_array=( "$@" )
+    declare -a query_array=( $input )
     local query=" AND ("
     for i in ${query_array[@]}; do
-        query="${query}`__qq_esc $i` $bool "
+        query="${query}`__qq_esc $i`$bool"
     done
-    echo -n "$query"|sed -e 's/ AND $/)/' -e 's/ OR $/)/'
+    echo -n "$query"|sed -e 's/ AND $//' -e 's/ OR $//' -e 's/ +/ /g' -e 's/ *$/)/'
   fi
 }
 
@@ -327,5 +343,10 @@ __qc () {
   echo -en $COLOR
 }
 
-# __qq_query_include_all OR $@
+__qq_debug () {
+  if $_QQ_DEBUG; then
+    echo "$@" >&2
+  fi
+}
+
 __qq "$@"
