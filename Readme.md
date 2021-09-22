@@ -2,6 +2,8 @@
 
 [Pretty version](http://ttscoff.github.com/QuickQuestion/)
 
+<!--BEGIN PROJECT-->
+
 The `qq` script and related extensions are designed to keep an archive of files with questions as the filename and answers as the content. It works well with Notational Velocity and nvALT, but can function as an archive of knowledge with nothing but a Mac and a command line. Scripts are included for Quicksilver, LaunchBar and Alfred, as well as a command line tool.
 
 The story behind the script is: I forget everything. I forget what I was working on last night. I forget where I left important things. I forget how I solved a major problem and have to work it out again next time it comes up. I forget where I saved the perfect settings I found for h.264 compression. You get the picture. So I've started building an archive of plain text files with questions and answers, and a system which makes it easy to add new knowledge at any time. The question format makes it easy to query, even when I don't remember the answer at all.
@@ -98,7 +100,4 @@ If you're using Quicksilver, LaunchBar or Alfred it's assumed that you can locat
 
 From the command line you can use the `-e` argument to open the first result for the following query in the editor you specified in the configuration (`mate` by default). It expects a command-line tool, not an OS X application name. Most editors have these available.
 
-### TODO ###
-
-* Add "stop words" removal to the query string to automatically remove non-operative words and simplify the query transparently.
-* Add some intelligence for running multiple queries from the same string; "how" and "what did" have similar meanings, but the semantics of the search will exclude the other's results.
+<!--END PROJECT-->
