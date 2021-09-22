@@ -1,3 +1,7 @@
+## 1.2.6
+
+- New build process
+
 ## 1.2.5
 
 - Much improved presentation of results when using fzf

@@ -1,5 +1,5 @@
 #!/bin/bash
-QQ_VERSION=1.2.5
+QQ_VERSION=1.2.6
 # Usage:
 # Ask a question using natural language
 # $ qq [search terms]
