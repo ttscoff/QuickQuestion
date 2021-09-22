@@ -1,5 +1,5 @@
 #!/bin/bash
-QQ_VERSION=1.2.3
+QQ_VERSION=1.2.5
 # Usage:
 # Ask a question using natural language
 # $ qq [search terms]
@@ -97,14 +97,14 @@ __qq () {
         ;;
       l)
         __qq_list_all
-        exit 0
+        return 0
         ;;
       p)
         ADDING=true
         PASTING=true
         ;;
       v)
-        echo "$0 v$QQ_VERSION"
+        echo "QuickQuestion v$QQ_VERSION"
         return
         ;;
     esac
@@ -142,7 +142,7 @@ __qq () {
     else
       echo "Invalid number of arguments for -a(dd). Requires question and answer (or no arguments to input them at runtime)."
       echo "example: ${0##*/} -a \"What is the meaning of life?\" \"42\""
-      exit 1
+      return 1
     fi
     local QQFILE="${NOTESDIR}$NOTESPRE $QUESTION.$NOTESEXT"
 
@@ -196,8 +196,9 @@ __qq () {
 
     if [[ "$RESULTS" == "" ]]; then
       echo "$(__qc red)Sorry, I don't know the answer to that question.$(__qc reset)"
-      exit 2
+      return 2
     else
+      TOTAL_RESULTS=$(echo -ne "$RESULTS" | wc -l)
       # Sort results by length, assuming shortest result is best match
       declare -a PRETTY_RESULTS=()
 
@@ -221,7 +222,7 @@ __qq () {
 
       if [[ "$QUESTION" =~ ^$ ]]; then
         echo "$(__qc red)Sorry, I don't know the answer to that question.$(__qc reset)"
-        exit 1;
+        return 1;
       fi
 
       local ANSWER_FILE="${NOTESDIR}${NOTESPRE} ${QUESTION}.${NOTESEXT}"
@@ -232,7 +233,6 @@ __qq () {
       fi
 
       # QUESTION=`basename "$ANSWER" ".$NOTESEXT"`
-      echo -e "\n"
       echo -n "$(__qc yellow)Q: $(__qc white)"
       echo "$QUESTION"|sed -E 's/([^\?])$/\1?/'
       echo -n "$(__qc yellow)A: $(__qc white)"
@@ -256,10 +256,12 @@ __qq () {
         echo -e "$(__qc cyan)$RESULTS"
       fi
 
+      __qq_debug "\n$(__qc green)$TOTAL_RESULTS $(__qc white)total results"
+
       __qc reset
     fi
   fi
-  exit 0
+  return 0
 }
 
 __qq_esc () {
@@ -332,7 +334,7 @@ __qq_list_all () {
   echo -e "$RESULTS" | while read LINE; do
     if [[ "$LINE" =~ ^$ ]]; then
       echo "$(__qc red)Sorry, no answers found.$(__qc reset)"
-      exit 1;
+      return 1;
     fi
     QUESTION=`basename "$LINE" ".$NOTESEXT"`
     echo "$QUESTION"|sed -E "s/$NOTESPREESC ?//g"|sed -E 's/([^\?])$/\1?/'
@@ -401,7 +403,7 @@ __qc () {
 
 __qq_debug () {
   if $_QQ_DEBUG; then
-    echo "$@" >&2
+    echo -e "$@" >&2
   fi
 }
 
