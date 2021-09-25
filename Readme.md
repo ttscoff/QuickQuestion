@@ -2,7 +2,7 @@
 
 [Pretty version](http://ttscoff.github.com/QuickQuestion/)
 
-<!--BEGIN PROJECT-->
+<!--README-->
 
 The `qq` script and related extensions are designed to keep an archive of files with questions as the filename and answers as the content. It works well with Notational Velocity and nvALT, but can function as an archive of knowledge with nothing but a Mac and a command line. Scripts are included for Quicksilver, LaunchBar and Alfred, as well as a command line tool.
 
@@ -100,4 +100,4 @@ If you're using Quicksilver, LaunchBar or Alfred it's assumed that you can locat
 
 From the command line you can use the `-e` argument to open the first result for the following query in the editor you specified in the configuration (`mate` by default). It expects a command-line tool, not an OS X application name. Most editors have these available.
 
-<!--END PROJECT-->
+<!--END README-->
