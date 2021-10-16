@@ -1,3 +1,7 @@
+## 1.2.7
+
+- Fix regex to allow nested parens in @copy
+
 ## 1.2.6
 
 - New build process

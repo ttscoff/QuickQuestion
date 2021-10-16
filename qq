@@ -1,5 +1,5 @@
 #!/bin/bash
-QQ_VERSION=1.2.6
+QQ_VERSION=1.2.7
 # Usage:
 # Ask a question using natural language
 # $ qq [search terms]
@@ -236,9 +236,9 @@ __qq () {
       echo -n "$(__qc yellow)Q: $(__qc white)"
       echo "$QUESTION"|sed -E 's/([^\?])$/\1?/'
       echo -n "$(__qc yellow)A: $(__qc white)"
-      cat "$ANSWER_FILE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\(([^\)]+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g' # |sed -E 's/^[   ]*|[  ]*$//g'
+      cat "$ANSWER_FILE"|sed -E 's/@\([^\)]+\) ?//g'|sed -E 's/@copy\((.+)\)/\1/'|sed -E 's/@open\(([^\)+]*)\)/Related URL: \1/'|sed -E 's/@[^\( ]+ ?//g' # |sed -E 's/^[   ]*|[  ]*$//g'
       if [[ `cat "$ANSWER_FILE"|grep -E '@copy\('` && $HAS_COPIED_TEXT == false ]]; then
-        cat "$ANSWER_FILE"|grep '@copy('|sed -E 's/.*@copy\(([^\)]+)\).*/\1/'|tr -d '\n'|pbcopy
+        cat "$ANSWER_FILE"|grep '@copy('|sed -E 's/.*@copy\((.+)\).*/\1/'|tr -d '\n'|pbcopy
         echo -e "\n$(__qc green)Example in clipboard"
         HAS_COPIED_TEXT=true
       fi
