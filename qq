@@ -144,15 +144,25 @@ __qq () {
         fi
       fi
 
+      if [[ -z "$QUESTION" ]]; then
+        echo "No question asked"
+        exit 1
+      fi
+
       if $PASTING; then
         ANSWER=$(pbpaste)
       elif [[ "$EDITING" == "false" ]]; then
         if $QQ_USE_GUM; then
-          ANSWER=$(gum write --placeholder "So, what is the answer to ${QUESTION}?" --width $(tput cols) --height 15 --char-limit 0)
+          ANSWER=$(gum write --placeholder "So, ${QUESTION}?" --width $(tput cols) --char-limit 0)
         else
           echo "Answer (Ctrl-D to end):"
           ANSWER=$(cat)
         fi
+      fi
+
+      if [[ -z "$ANSWER" ]]; then
+        echo "No answer given"
+        exit 1
       fi
     else
       echo "Invalid number of arguments for -a(dd). Requires question and answer (or no arguments to input them at runtime)."
