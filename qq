@@ -161,13 +161,13 @@ __qq () {
     local QQINPUTQUERY=$(__qq_query_include_all "${*%\?}")
     __qq_debug "Attempting to find ALL options: ${QQINPUTQUERY}"
     QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE ${QQINPUTQUERY}${EXCLUDEQQQUERY}'"
-    local RESULTS=$(eval $QQQUERY)
+    local RESULTS=$(eval $QQQUERY 2> /dev/null)
 
     if [[ "$RESULTS" == "" ]]; then
       QQINPUTQUERY=$(__qq_query_include_all OR "${*%\?}")
       __qq_debug "No luck, looser search: ${QQINPUTQUERY}"
       QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE ${QQINPUTQUERY}${EXCLUDEQQQUERY}'"
-      RESULTS=$(eval $QQQUERY)
+      RESULTS=$(eval $QQQUERY 2> /dev/null)
     fi
 
     if [[ "$RESULTS" == "" ]]; then
@@ -175,7 +175,7 @@ __qq () {
       if $QQ_USE_FZF; then
         QQQUERY='ls "${NOTESDIR}??"*.$NOTESEXT|fzf -i --tiebreak=length,begin -f "$(__qq_remove_stopwords "$*")"'
         __qq_debug "We have fzf, trying: ${QQQUERY}"
-        RESULTS=$(eval $QQQUERY)
+        RESULTS=$(eval $QQQUERY 2> /dev/null)
         RESULTS=$(echo "$RESULTS" | head -n 1)
       fi
     fi
@@ -329,7 +329,7 @@ __qq_query_exclude_all () {
 __qq_list_all () {
   local QQQUERY="mdfind -onlyin '$NOTESDIR' -interpret '(kind:text OR kind:markdown) AND filename:$NOTESEXT AND filename:$NOTESPRE ${EXCLUDEQQQUERY}'"
   local NOTESPREESC=`echo "$NOTESPRE"|sed -E 's/([\?\!\$\`\"]) ?/\\\\\1/g'`
-  RESULTS=$(eval $QQQUERY)
+  RESULTS=$(eval $QQQUERY 2> /dev/null)
   echo "$(__qc green)Questions I have answers to...$(__qc white)"
   echo -e "$RESULTS" | while read LINE; do
     if [[ "$LINE" =~ ^$ ]]; then
