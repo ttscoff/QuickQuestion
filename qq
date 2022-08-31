@@ -32,6 +32,8 @@ QQ_VERSION=1.2.8
 #   QQ_NOTES_EXT - Extension of answer files (default md)
 #   QQ_NOTES_PRE - Prefix of question files (default ??)
 #   QQ_EDITOR    - Text editor to use (default $EDITOR)
+#   QQ_USE_FZF   - true or false to force use of fzf for menus
+#   QQ_USE_GUM   - true or false to force use of gum for inputs
 #
 #  Example:
 #  export QQ_NOTES_DIR="/Users/ttscoff/Dropbox/Notes"
@@ -45,6 +47,11 @@ _USE_FZF=false
 which fzf &>/dev/null
 [[ $? == 0 ]] && _USE_FZF=true
 : ${QQ_USE_FZF:=$_USE_FZF}
+
+_USE_GUM=false
+which gum &>/dev/null
+[[ $? == 0 ]] && _USE_GUM=true
+: ${QQ_USE_GUM:=$_USE_GUM}
 
 _QQ_DEBUG=false
 
@@ -129,15 +136,23 @@ __qq () {
         QUESTION=$1
         echo "Question: $QUESTION"
       else
-        echo -n "Question: "
-        read QUESTION
+        if $QQ_USE_GUM; then
+          QUESTION=$(gum input --placeholder "Enter your question")
+        else
+          echo -n "Question: "
+          read QUESTION
+        fi
       fi
 
       if $PASTING; then
         ANSWER=$(pbpaste)
       elif [[ "$EDITING" == "false" ]]; then
-        echo "Answer (Ctrl-D to end):"
-        ANSWER=$(cat)
+        if $QQ_USE_GUM; then
+          ANSWER=$(gum write --placeholder "So, what is the answer to ${QUESTION}?" --width $(tput cols) --height 15 --char-limit 0)
+        else
+          echo "Answer (Ctrl-D to end):"
+          ANSWER=$(cat)
+        fi
       fi
     else
       echo "Invalid number of arguments for -a(dd). Requires question and answer (or no arguments to input them at runtime)."
@@ -370,6 +385,8 @@ __qq_config () {
   echo "$(__qc yellow)QQ_NOTES_EXT: $(__qc white)${QQ_NOTES_EXT}$(__qc reset)"
   echo "$(__qc yellow)QQ_NOTES_PRE: $(__qc white)${QQ_NOTES_PRE}$(__qc reset)"
   echo "$(__qc yellow)   QQ_EDITOR: $(__qc white)${QQ_EDITOR}$(__qc reset)"
+  echo "$(__qc yellow)  QQ_USE_FZF: $(__qc white)${QQ_USE_FZF}$(__qc reset)"
+  echo "$(__qc yellow)  QQ_USE_GUM: $(__qc white)${QQ_USE_GUM}$(__qc reset)"
   echo
 }
 
