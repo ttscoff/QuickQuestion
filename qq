@@ -198,7 +198,7 @@ __qq () {
     if [[ "$RESULTS" == "" ]]; then
 
       if $QQ_USE_FZF; then
-        QQQUERY='ls "${NOTESDIR}??"*.$NOTESEXT|fzf -i --tiebreak=length,begin -f "$(__qq_remove_stopwords "$*")"'
+        QQQUERY='ls "${NOTESDIR}${NOTESPRE}"*.$NOTESEXT|fzf -i --tiebreak=length,begin -f "$(__qq_remove_stopwords "$*")"'
         __qq_debug "We have fzf, trying: ${QQQUERY}"
         RESULTS=$(eval $QQQUERY 2> /dev/null)
         RESULTS=$(echo "$RESULTS" | head -n 1)
@@ -211,7 +211,7 @@ __qq () {
       local MAX=${#WORDS}
       local RX=$(__qq_query_regex "$*")
       for i in $(seq $MAX 2); do
-        RESULTS=$(ls "${NOTESDIR}??"*.$NOTESEXT|grep -iE "${RX}{$i}")
+        RESULTS=$(ls "${NOTESDIR}${NOTESPRE}"*.$NOTESEXT|grep -iE "${RX}{$i}")
         if [[ "$RESULTS" != "" ]]; then
           __qq_debug "Ooh, found a match containing $i of the words: ${RX}{$i}"
           break
